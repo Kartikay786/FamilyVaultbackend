@@ -23,20 +23,24 @@ const memberScehema = new mongoose.Schema({
     phone: {
         type: Number
     },
-    relation: {
-        type: String, required: true
-    },
-    role: {
-        type: String,
-        enum: ["Admin", "Member"]
-    },
     family: [
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Family'
         }
     ],
-    memory: []
+    memory: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Memory"
+        }
+    ],
+    vault: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Vault"
+        }
+    ]
 }, { timestamps: true })
 
 const Member = new mongoose.model('Member', memberScehema);

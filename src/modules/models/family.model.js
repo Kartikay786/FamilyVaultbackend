@@ -1,49 +1,62 @@
 import mongoose from "mongoose";
 
 const familySchema = new mongoose.Schema({
-    familyName :{
-        type:String,
-        required:true,   
-        unique:true
+    familyName: {
+        type: String,
+        required: true,
+        unique: true
     },
-    description : {
-        type:String
+    description: {
+        type: String
     },
-    email:{
-        type:String,
-        lowercase:true
+    email: {
+        type: String,
+        lowercase: true
     },
-    profileImage :{
-        type:String
+    profileImage: {
+        type: String
     },
-    password:{
-        type:String,
-        required:true
+    password: {
+        type: String,
+        required: true
     },
-    member:[
+    member: [
         {
-            member :{
-                type : mongoose.Schema.Types.ObjectId,
-                ref:'Member'
+            member: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Member'
             },
-            addedBy:{
-                type:String
+            addedBy: {
+                type: String
+            },
+            role: {
+                type: String,
+                enum: ['Admin', 'Member']
+            },
+            relation: {
+                type: String
             }
         }
     ],
-    vault:{
-        type:[]
-    },
-    memory:{
-        type:[]
-    },
-    role:{
-        type:String,
-        default:'SuperAdmin'
+    vault: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Vault"
+        }
+    ],
+    memory: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Memory"
+        }
+    ],
+    role: {
+        type: String,
+        default: 'SuperAdmin'
     },
 
-},{timestamps:true})
+}, { timestamps: true })
 
-const Family = new mongoose.model('Family',familySchema);
+const Family = new mongoose.model('Family', familySchema);
 
 export default Family

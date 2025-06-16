@@ -22,7 +22,7 @@ const addMember = async (req, res) => {
             }
 
             // If member exists but not in this family, add their ObjectId
-            family.member.push({ member: existingMember._id, addedBy: memberId || familyId });
+            family.member.push({ member: existingMember._id, addedBy: memberId || familyId,role,relation });
             existingMember.family.push(familyId);
 
             await family.save();
@@ -31,12 +31,12 @@ const addMember = async (req, res) => {
         }
 
 
-        const newMember = new Member({ memberName, bio, Dob, email, phone, relation, role, profileImage });
+        const newMember = new Member({ memberName, bio, Dob, email, phone, profileImage });
         newMember.family.push(familyId);
         await newMember.save();
 
 
-        family.member.push({ member: newMember._id, addedBy: memberId || familyId });
+        family.member.push({ member: newMember._id, addedBy: memberId || familyId ,role,relation });
         await family.save();
 
         console.log(family, newMember);
