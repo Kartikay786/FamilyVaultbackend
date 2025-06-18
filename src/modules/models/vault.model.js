@@ -22,11 +22,11 @@ const vaultSchema = new mongoose.Schema({
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Member'
-        },
+        }
     ],
     memory: [
         {
-            type : mongoose.Schema.Types.ObjectId,
+            type: mongoose.Schema.Types.ObjectId,
             ref: "Memory"
         }
     ],
@@ -40,6 +40,6 @@ const vaultSchema = new mongoose.Schema({
     }
 }, { timestamps: true })
 
-const Vault = new mongoose.model('Vault',vaultSchema);
+const Vault = new mongoose.model('Vault', vaultSchema);
 
 export default Vault

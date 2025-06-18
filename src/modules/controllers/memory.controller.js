@@ -7,6 +7,7 @@ const addMemory = async (req, res) => {
     const { title, description, uploadType, uploadBy, familId, vaultId } = req.body;
     const profileImage = req.files?.profileImage?.[0].filename || '';
     const video = req.files?.video?.[0]?.filename || '';
+    const audio = req.files?.audio?.[0]?.filename || '';
 
     try {
         const family = await Family.findById(familId);
@@ -15,7 +16,7 @@ const addMemory = async (req, res) => {
 
 
 
-        const media = uploadType === 'Photo' ? profileImage : video;
+        const media = uploadType === 'Photo' ? profileImage : uploadType === 'Video' ? video : audio;
 
         if (vaultId) {
             const memory = new Memory({ title, description, uploadType, uploadBy, familId, vaultId, media });
@@ -67,14 +68,14 @@ const addMemory = async (req, res) => {
 }
 
 
-const memoryById = async (req,res)=>{
-    const {memoryId} = req.params;
+const memoryById = async (req, res) => {
+    const { memoryId } = req.params;
 
-    try{
+    try {
         const memory = await Memory.findById(memoryId).populate('vaultId').populate('uploadBy');
-        if(!memory) return res.status(400).json({message:'No memory exist with this id'});
+        if (!memory) return res.status(400).json({ message: 'No memory exist with this id' });
 
-        return res.json({memory});
+        return res.json({ memory });
     }
     catch (err) {
         console.log(err);
@@ -82,4 +83,75 @@ const memoryById = async (req,res)=>{
     }
 }
 
-export { addMemory, memoryById }
+const allMemoryByFamilyId = async (req, res) => {
+    const { familId } = req.params;
+
+    try {
+        const memory = await Memory.find({ familId }).populate('uploadBy').populate('vaultId');
+        if (!memory) return res.status(400).json({ message: 'This family have no Memory found ' });
+
+        return res.json({ memory })
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Server Error' })
+    }
+}
+
+const editMemory = async (req, res) => {
+    const { memoryId } = req.params;
+    const { title, description, uploadType } = req.body;
+    const profileImage = req.files?.profileImage?.[0].filename || '';
+    const video = req.files?.video?.[0]?.filename || '';
+
+    try {
+        const memory = await Memory.findOne({ memoryId });
+        if (!memory) return res.status(400).json({ message: 'This family have no Memory found ' });
+
+        const media = uploadType === 'Photo' ? profileImage : video;
+
+        memory.title = title || memory.title;
+        memory.description = description || memory.description;
+        memory.media = media || memory.media;
+
+        console.log(memory);
+        await memory.save();
+
+        return res.json({ message: 'memory uploaded successfully', memory })
+
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Server Error' })
+    }
+
+}
+
+const deleteMemory = async (req, res) => {
+    const { vaultId, familId, memoryId } = req.params;
+
+    try {
+        const family = await Family.findById(familId);
+        const vault = await Vault.findById(vaultId)
+
+        const memory = await Memory.findByIdAndDelete(memoryId);
+        if (!memory) return res.status(400).json({ message: 'No memory found' });
+
+        if (vaultId) {
+            vault.memory = vault.memory.filter(memId => memId.toString() !== memoryId);
+            await vault.save();
+
+        }
+
+        family.memory = family.memory.filter(memId => memId.toString() !== memoryId);
+        await family.save();
+
+        return res.json({ message: 'Member deleted From vault', vault })
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Server error' })
+    }
+}
+
+export { addMemory, memoryById, allMemoryByFamilyId, editMemory, deleteMemory }

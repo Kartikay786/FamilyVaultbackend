@@ -22,7 +22,7 @@ const addMember = async (req, res) => {
             }
 
             // If member exists but not in this family, add their ObjectId
-            family.member.push({ member: existingMember._id, addedBy: memberId || familyId,role,relation });
+            family.member.push({ member: existingMember._id, addedBy: memberId || familyId, role, relation });
             existingMember.family.push(familyId);
 
             await family.save();
@@ -36,7 +36,7 @@ const addMember = async (req, res) => {
         await newMember.save();
 
 
-        family.member.push({ member: newMember._id, addedBy: memberId || familyId ,role,relation });
+        family.member.push({ member: newMember._id, addedBy: memberId || familyId, role, relation });
         await family.save();
 
         console.log(family, newMember);
@@ -56,7 +56,7 @@ const findMemberByemail = async (req, res) => {
         const member = await Member.findOne({ email });
         if (!member) return res.status(400).json({ message: 'No member found with this email id' });
 
-        console.log(member)
+        console.log(member, familyId);
         const isInFamily = member.family.some(famId => famId.toString() === familyId);
         if (!isInFamily) return res.status(400).json({ message: 'This member does not belong to the given family' });
 
@@ -69,4 +69,34 @@ const findMemberByemail = async (req, res) => {
     }
 }
 
-export { addMember, findMemberByemail }
+const addFamilyMemberByemail = async (req, res) => {
+    const { email, familyId, role, relation } = req.body;
+
+    try {
+
+        console.log(email, familyId, role, relation)
+        const member = await Member.findOne({ email });
+        if (!member) return res.status(400).json({ message: 'Member not found' });
+        console.log(member);
+
+        const isInFamily = member.family.some(famId => famId.toString() === familyId);
+        if (isInFamily) return res.status(400).json({ message: 'This member already belong to the given family' });
+
+        const family = await Family.findById(familyId);
+
+        family.member.push({ member: member._id, addedBy: familyId, role: role, relation });
+        await family.save();
+
+        member.family.push(familyId);
+        await member.save()
+
+        return res.json({ message: "Member added successfully" })
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Server Error' })
+    }
+}
+
+
+export { addMember, findMemberByemail, addFamilyMemberByemail }

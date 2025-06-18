@@ -7,6 +7,8 @@ const storage = multer.diskStorage({
       cb(null, "./public/Images");
     } else if (file.fieldname === "video") {
       cb(null, "./public/Videos");
+    } else if (file.fieldname === "audio") {
+      cb(null, "./public/Audio");
     } else {
       cb(null, "./public/Images");
     }
@@ -30,6 +32,10 @@ const upload = multer({
     } else if (file.fieldname === "video") {
       if (!file.mimetype.startsWith("video/")) {
         return cb(new Error("Only video files are allowed for video field"));
+      }
+    } else if (file.fieldname === "audio") {
+      if (!file.mimetype.startsWith("audio/")) {
+        return cb(new Error("Only audio files are allowed for audio field"));
       }
     }
     cb(null, true);

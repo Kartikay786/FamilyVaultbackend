@@ -75,7 +75,7 @@ const familyProfile = async (req,res) => {
     const {familyId} = req.params;
 
     try{
-        const family = await Family.findById(familyId).populate('member.member');
+        const family = await Family.findById(familyId).populate('member.member').populate('member.addedBy');
         if(!family) return res.status(400).json({message:'Family not found'});
 
         return res.json({message:'Family profile',family});
@@ -86,6 +86,72 @@ const familyProfile = async (req,res) => {
     }
 }
 
-export {regsiterFamily,loginFamily,familyProfile}
+
+const editFamily = async (req,res) => {
+    const {familyId} = req.params;
+    const {familyName,description} = req.body;
+    const profileImage = req.files?.profileImage?.[0]?.filename || "";
+
+
+    try{
+        const family = await Family.findById(familyId);
+
+        if(!family) return res.status(400).json({message:'Family not found'});
+
+        family.familyName = familyName || family.familyName;
+        family.description = description || family.description;
+        family.profileImage = profileImage || family.profileImage
+
+        await family.save();
+        return res.json({message:'family updated'});
+    }
+     catch(err){
+        console.log(err);
+        return res.status(500).json({message:'Server Error'});
+    }
+}
+
+
+const stats = async (req,res) => {
+    const {familyId} = req.params;
+
+    try{
+        const family = await Family.findById(familyId);
+        if(!family) return res.status(400).json({message:'Family not found'});
+
+        const totalmember = family.member?.length ;
+        const totalvault = family.vault?.length ;
+        const totalMemory = family.memory?.length ;
+
+        return res.json({totalMemory:totalMemory,totalmember:totalmember,totalvault:totalvault})
+    }
+    catch(err){
+        console.log(err);
+        return res.status(500).json({message:'Server Error'});
+    }
+}
+
+const deleteMemberFromFamily = async (req,res)=>{
+    const {familyId,memberId} = req.params;
+
+     try{
+        const family = await Family.findById(familyId);
+        if(!family) return res.status(400).json({message:'No family found'});
+
+        const isInfamily = family.member.some(memId => memId.member.toString() === memberId);
+        if (!isInfamily) return res.status(400).json({ message: 'This member not belong to the given family' });
+
+        family.familyMembers = family.familyMembers.filter(memId => memId.toString() !== memberId);
+        await family.save();
+
+        return res.json({message:'Member deleted From family',family})
+    }
+     catch(err){
+        console.log(err);
+        return res.status(500).json({message:'Server error'})
+    }
+}
+
+export {regsiterFamily,loginFamily,familyProfile,editFamily,stats}
 
 
