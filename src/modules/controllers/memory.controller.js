@@ -4,68 +4,55 @@ import Memory from "../models/memory.model.js";
 import Vault from "../models/vault.model.js";
 
 const addMemory = async (req, res) => {
-    const { title, description, uploadType, uploadBy, familId, vaultId } = req.body;
-    const profileImage = req.files?.profileImage?.[0].filename || '';
+    let { title, description, uploadType, uploadBy, familId, vaultId } = req.body;
+    const profileImage = req.files?.profileImage?.[0]?.filename || '';
     const video = req.files?.video?.[0]?.filename || '';
     const audio = req.files?.audio?.[0]?.filename || '';
 
     try {
         const family = await Family.findById(familId);
-        const member = await Member.findById(uploadBy)
 
-
-
+        // Convert "null" string or empty string to undefined
+        if (uploadBy === 'null' || uploadBy === '') uploadBy = undefined;
+        if (vaultId === 'null' || vaultId === '') vaultId = undefined;
 
         const media = uploadType === 'Photo' ? profileImage : uploadType === 'Video' ? video : audio;
 
-        if (vaultId) {
-            const memory = new Memory({ title, description, uploadType, uploadBy, familId, vaultId, media });
-            console.log(memory);
-            await memory.save();
+        const memoryData = { title, description, uploadType, familId, media };
+        
+        if (uploadBy) memoryData.uploadBy = uploadBy;
+        if (vaultId) memoryData.vaultId = vaultId;
 
-            family.memory.push(memory._id);
-            await family.save();
+        const memory = new Memory(memoryData);
+        await memory.save();
 
-            member.memory.push(memory._id);
-            await member.save();
+        family.memory.push(memory._id);
+        await family.save();
 
-            if (vaultId) {
-                const vault = await Vault.findById(vaultId);
-                vault.memory.push(memory._id);
-                await vault.save();
+        if (uploadBy) {
+            const member = await Member.findById(uploadBy);
+            if (member) {
+                member.memory.push(memory._id);
+                await member.save();
             }
-
-
-            return res.json({ message: 'memory uploaded successfully', memory })
-        } {
-            const memory = new Memory({ title, description, uploadType, uploadBy, familId, media });
-            console.log(memory);
-            await memory.save();
-
-
-
-            family.memory.push(memory._id);
-            await family.save();
-
-            member.memory.push(memory._id);
-            await member.save();
-
-            if (vaultId) {
-                const vault = await Vault.findById(vaultId);
-                vault.memory.push(memory._id);
-                await vault.save();
-            }
-
-
-            return res.json({ message: 'memory uploaded successfully', memory })
         }
 
+        if (vaultId) {
+            const vault = await Vault.findById(vaultId);
+            if (vault) {
+                vault.memory.push(memory._id);
+                await vault.save();
+            }
+        }
+
+        return res.json({ message: 'Memory uploaded successfully', memory });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ message: 'Server Error' });
     }
-    catch (err) {
-        console.log(err);
-        return res.status(500).json({ message: 'Server Error' })
-    }
-}
+};
+
 
 
 const memoryById = async (req, res) => {

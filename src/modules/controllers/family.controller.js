@@ -1,13 +1,15 @@
 import bcrypt from "bcrypt";
 import Family from "../models/family.model.js";
 import Member from "../models/member.model.js";
+import Vault from "../models/vault.model.js";
+import Memory from "../models/memory.model.js";
 
 const regsiterFamily = async (req, res) => {
     const { familyName, description, email, password } = req.body;
     const profileImage = req.files?.profileImage?.[0]?.filename || "";
 
     try {
-        const existEmail = await Family.findOne({ email ,familyName });
+        const existEmail = await Family.findOne({ email, familyName });
         if (existEmail) return res.status(404).json({ message: 'Email and familyName is Already used. Try Some other' });
 
         const family = new Family({ familyName, description, email, password, profileImage });
@@ -21,7 +23,7 @@ const regsiterFamily = async (req, res) => {
 
     }
     catch (err) {
-         return res.status(500).json({message:'Server error'})
+        return res.status(500).json({ message: 'Server error' })
     }
 }
 
@@ -61,8 +63,8 @@ const loginFamily = async (req, res) => {
         res.status(200).json({
             message: 'Login successful',
             loginType: isFamilyEmail ? 'Family' : 'Member',
-            family ,
-            loginEmail : email,
+            family,
+            loginEmail: email,
         });
 
     } catch (err) {
@@ -71,72 +73,72 @@ const loginFamily = async (req, res) => {
     }
 };
 
-const familyProfile = async (req,res) => {
-    const {familyId} = req.params;
+const familyProfile = async (req, res) => {
+    const { familyId } = req.params;
 
-    try{
+    try {
         const family = await Family.findById(familyId).populate('member.member').populate('member.addedBy');
-        if(!family) return res.status(400).json({message:'Family not found'});
+        if (!family) return res.status(400).json({ message: 'Family not found' });
 
-        return res.json({message:'Family profile',family});
+        return res.json({ message: 'Family profile', family });
     }
-    catch(err){
+    catch (err) {
         console.log(err);
-        return res.status(500).json({message:'Server Error'});
+        return res.status(500).json({ message: 'Server Error' });
     }
 }
 
 
-const editFamily = async (req,res) => {
-    const {familyId} = req.params;
-    const {familyName,description} = req.body;
+const editFamily = async (req, res) => {
+    const { familyId } = req.params;
+    const { familyName, description } = req.body;
     const profileImage = req.files?.profileImage?.[0]?.filename || "";
 
 
-    try{
+    try {
         const family = await Family.findById(familyId);
 
-        if(!family) return res.status(400).json({message:'Family not found'});
+        if (!family) return res.status(400).json({ message: 'Family not found' });
 
         family.familyName = familyName || family.familyName;
         family.description = description || family.description;
         family.profileImage = profileImage || family.profileImage
 
         await family.save();
-        return res.json({message:'family updated'});
+        return res.json({ message: 'family updated' });
     }
-     catch(err){
+    catch (err) {
         console.log(err);
-        return res.status(500).json({message:'Server Error'});
+        return res.status(500).json({ message: 'Server Error' });
     }
 }
 
 
-const stats = async (req,res) => {
-    const {familyId} = req.params;
+const stats = async (req, res) => {
+    const { familyId } = req.params;
 
-    try{
+    try {
         const family = await Family.findById(familyId);
-        if(!family) return res.status(400).json({message:'Family not found'});
+        if (!family) return res.status(400).json({ message: 'Family not found' });
 
-        const totalmember = family.member?.length ;
-        const totalvault = family.vault?.length ;
-        const totalMemory = family.memory?.length ;
+        const totalmember = family.member?.length;
+        const totalvault = family.vault?.length;
+        const totalMemory = family.memory?.length;
 
-        return res.json({totalMemory:totalMemory,totalmember:totalmember,totalvault:totalvault})
+        return res.json({ totalMemory: totalMemory, totalmember: totalmember, totalvault: totalvault })
     }
-    catch(err){
+    catch (err) {
         console.log(err);
-        return res.status(500).json({message:'Server Error'});
+        return res.status(500).json({ message: 'Server Error' });
     }
 }
 
-const deleteMemberFromFamily = async (req,res)=>{
-    const {familyId,memberId} = req.params;
+const deleteMemberFromFamily = async (req, res) => {
+    const { familyId, memberId } = req.params;
 
-     try{
+    try {
         const family = await Family.findById(familyId);
-        if(!family) return res.status(400).json({message:'No family found'});
+        if (!family) return res.status(400).json({ message: 'No family found' });
 
         const isInfamily = family.member.some(memId => memId.member.toString() === memberId);
         if (!isInfamily) return res.status(400).json({ message: 'This member not belong to the given family' });
@@ -144,14 +146,54 @@ const deleteMemberFromFamily = async (req,res)=>{
         family.familyMembers = family.familyMembers.filter(memId => memId.toString() !== memberId);
         await family.save();
 
-        return res.json({message:'Member deleted From family',family})
+        return res.json({ message: 'Member deleted From family', family })
     }
-     catch(err){
+    catch (err) {
         console.log(err);
-        return res.status(500).json({message:'Server error'})
+        return res.status(500).json({ message: 'Server error' })
     }
 }
 
-export {regsiterFamily,loginFamily,familyProfile,editFamily,stats}
+
+const changePassword = async (req, res) => {
+    const { familyId, currentPassword, newPassword } = req.body;
+
+    try {
+        const family = await Family.findById(familyId);
+        if (!family) return res.status(400).json({ message: 'Family Not Found' });
+
+        const isMatch = await bcrypt.compare(currentPassword, family.password);
+        if (!isMatch) return res.status(400).json({ message: 'Please entered incorrect current password' });
+
+        family.password = await bcrypt.hash(newPassword, 10) || family.password;
+        await family.save();
+
+        return res.json({ message: 'Password updated' });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Server error' })
+    }
+}
+
+const deletefamilyAccount = async (req, res) => {
+    const { familyId } = req.params;
+
+    try {
+        const family = await Family.findByIdAndDelete(familyId);
+        if(!family) return res.status(400).json('Family not found');
+
+         await Vault.deleteMany({familyId});
+         await Memory.deleteMany({familyId}); 
+
+        return res.json({message:'Family Account Deleted.'})
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Server error' })
+    }
+}
+
+export { regsiterFamily, loginFamily, familyProfile, editFamily, stats, changePassword,deletefamilyAccount }
 
 

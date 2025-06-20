@@ -1,6 +1,6 @@
 import express from 'express'
 import { upload } from '../../middleware/multer.middleware.js';
-import { editFamily, familyProfile, loginFamily, regsiterFamily, stats } from '../controllers/family.controller.js';
+import { changePassword, deletefamilyAccount, editFamily, familyProfile, loginFamily, regsiterFamily, stats } from '../controllers/family.controller.js';
 const router = express.Router();
 
 router.post('/registerfamily',
@@ -13,5 +13,7 @@ router.put('/editfamily/:familyId', upload.fields([
         { name: "profileImage", maxCount: 1 }
     ]),editFamily);
 router.get('/allstats/:familyId',stats);
+router.put('/changePassword',changePassword);
+router.delete('/deleteAccount/:familyId',deletefamilyAccount)
 
 export default router
